@@ -12,9 +12,30 @@
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--light-gray); margin: 0; padding: 0; color: #333; font-size: var(--font-size-base); }
         .container { width: 100%; padding: 25px 30px; box-sizing: border-box; }
-        /* PERUBAHAN 2: Saiz fon H1 diubah kepada 14px bold dan uppercase */
-        h1 { color: #222; text-align: center; margin-top: 0; margin-bottom: 25px; font-size: clamp(1.5rem, 4vw + 1rem, 2.2rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        /* PERUBAHAN 1: Gaya untuk tarikh di bawah tajuk H1 */
+        
+        /* PERUBAHAN 2: Bahagian baru untuk logo */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .logo-container img {
+            max-height: 60px; /* Saiz logo yang konsisten */
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* PERUBAHAN 1: Gaya fon H1 dikembalikan kepada asal (responsif) */
+        h1 { 
+            color: #222; 
+            text-align: center; 
+            margin-top: 0; 
+            margin-bottom: 25px; 
+            font-size: clamp(1.5rem, 4vw + 1rem, 2.2rem); 
+            font-weight: 700; 
+        }
         .current-date { text-align: center; color: #555; font-weight: 400; margin-top: -15px; margin-bottom: 30px; font-size: 0.95em; }
         .form-rekod { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; margin-bottom: 25px; }
         .form-group { display: flex; flex-direction: column; } .form-group.full-width { grid-column: 1 / -1; }
@@ -26,9 +47,8 @@
         h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-weight: 600; font-size: 1.5em; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { text-align: left; padding: 14px 10px; border-bottom: 1px solid #eef0f2; }
-        /* PERUBAHAN 1: Lebar lajur Bil. dan Nama diselaraskan */
         th:first-child, td:first-child { width: 40px; text-align: center; }
-        #daily-log-container th:nth-child(2) { width: 60%; } /* Beri lebih ruang untuk nama */
+        #daily-log-container th:nth-child(2) { width: 60%; }
         thead tr { background-color: #f9fafb; } th { font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
         .loading-message { text-align: center; color: #888; font-style: italic; }
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
@@ -44,14 +64,22 @@
         @media (max-width: 600px) {
             .container { padding: 20px 15px; } .form-rekod { grid-template-columns: 1fr; gap: 20px; }
             th, td { padding: 12px 5px; }
-            h1 { font-size: 14px; }
+            /* PERUBAHAN 2: Saiz logo dikecilkan untuk paparan telefon */
+            .logo-container { gap: 15px; }
+            .logo-container img { max-height: 45px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Makluman Ketidakhadiran</h1>
-        <!-- PERUBAHAN 1: Elemen baharu untuk memaparkan tarikh hari ini -->
+        <!-- PERUBAHAN 2: Bahagian logo ditambah di sini -->
+        <div class="logo-container">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Kementerian_Pendidikan_Malaysia_logo.svg/1200px-Kementerian_Pendidikan_Malaysia_logo.svg.png" alt="Logo KPM" onerror="this.style.display='none'">
+            <img src="https://www.smkkotasamarahan.edu.my/wp-content/uploads/2021/01/cropped-logo-smkks-300x300-1.png" alt="Logo SMK Kota Samarahan" onerror="this.style.display='none'">
+            <img src="https://placehold.co/250x80/0056b3/FFFFFF?text=Penuntutilmu.net&font=lato" alt="Logo Penuntutilmu.net" onerror="this.style.display='none'">
+        </div>
+
+        <h1>Rekod Ketidakhadiran (1 Ikhlas)</h1>
         <h4 id="current-date-display" class="current-date"></h4>
         <form class="form-rekod" id="rekodBorang">
             <div class="form-group full-width"><label for="nama">Nama Murid</label><input type="text" id="nama" placeholder="Cth: Ahmad bin Abu" required></div>
@@ -63,14 +91,13 @@
         <div class="log-section" id="daily-log-container">
             <h2>Ketidakhadiran Hari Ini</h2>
             <table>
-                <!-- PERUBAHAN 1: Buang lajur Tarikh dan Hari -->
                 <thead><tr><th>Bil.</th><th>Nama</th><th>Sebab</th></tr></thead>
                 <tbody id="logBadanHarian"><tr class="loading-message"><td colspan="3">Sedang memuatkan data...</td></tr></tbody>
             </table>
         </div>
 
         <div class="log-section" id="monthly-log-container">
-            <h2>Ketidakhadiran Bulan Ini</h2>
+            <h2>Rekod Ketidakhadiran Bulan Ini</h2>
             <table>
                 <thead><tr><th>Ked.</th><th>Nama Murid</th><th>Jumlah Tidak Hadir</th></tr></thead>
                 <tbody id="logBadanBulanan"><tr class="loading-message"><td colspan="3">Sedang mengira data...</td></tr></tbody>
@@ -104,7 +131,6 @@
             const borang = document.getElementById("rekodBorang");
             const logBadanHarian = document.getElementById("logBadanHarian");
             const logBadanBulanan = document.getElementById("logBadanBulanan");
-            // PERUBAHAN 1: Rujukan kepada elemen tarikh
             const paparanTarikhSemasa = document.getElementById("current-date-display");
             const namaHari = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
             const namaBulan = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
@@ -113,7 +139,6 @@
             const popupShareLink = document.getElementById("popup-share-link");
             const popupSummaryText = document.getElementById("popup-summary-text");
 
-            // PERUBAHAN 1: Fungsi untuk memaparkan tarikh hari ini
             function paparkanTarikhHariIni() {
                 const now = new Date();
                 const hari = namaHari[now.getDay()];
@@ -123,7 +148,7 @@
                 paparanTarikhSemasa.textContent = `${hari}, ${tarikh} ${bulan} ${tahun}`;
             }
 
-            paparkanTarikhHariIni(); // Panggil fungsi sebaik sahaja halaman dimuatkan
+            paparkanTarikhHariIni();
 
             async function muatNaikDataDariSheet() {
                 logBadanHarian.innerHTML = `<tr class="loading-message"><td colspan="3">Menyambung ke Google Sheet...</td></tr>`;
@@ -170,13 +195,11 @@
                 
                 logBadanHarian.innerHTML = '';
                 if (rekodHariIni.length === 0) {
-                    // PERUBAHAN 1: Colspan diubah kepada 3
                     logBadanHarian.innerHTML = `<tr><td colspan="3">Tiada rekod untuk hari ini.</td></tr>`;
                 } else {
                     rekodHariIni.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                     rekodHariIni.forEach((rekod, index) => {
                         const barisBaru = logBadanHarian.insertRow();
-                        // PERUBAHAN 1: Lajur dikurangkan
                         barisBaru.insertCell(0).textContent = index + 1;
                         barisBaru.insertCell(1).textContent = rekod.nama;
                         barisBaru.insertCell(2).textContent = rekod.sebab;
@@ -192,7 +215,7 @@
                 }
 
                 const kiraan = dataBulanan.reduce((acc, rekod) => {
-                    const namaMurid = rekod.nama.trim().toUpperCase(); // Menyeragamkan nama
+                    const namaMurid = rekod.nama.trim().toUpperCase();
                     acc[namaMurid] = (acc[namaMurid] || 0) + 1;
                     return acc;
                 }, {});
@@ -202,7 +225,6 @@
                 dataDisusun.forEach(([nama, bilangan], index) => {
                     const barisBaru = logBadanBulanan.insertRow();
                     barisBaru.insertCell(0).textContent = index + 1;
-                    // Memaparkan nama dalam format 'Title Case' untuk kekemasan
                     const namaPaparan = nama.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
                     barisBaru.insertCell(1).textContent = namaPaparan;
                     barisBaru.insertCell(2).textContent = bilangan;
@@ -232,5 +254,4 @@
     </script>
 </body>
 </html>
-
 
