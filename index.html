@@ -29,87 +29,90 @@
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .popup-overlay.show { opacity: 1; visibility: visible; }
         .popup-content { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; transform: scale(0.9); transition: transform 0.3s; }
+        .popup-content h3 { margin-top: 0; color: #333; }
+        .popup-summary { text-align: left; margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-left: 4px solid var(--primary-color); border-radius: 4px; color: #555; line-height: 1.6; }
+        .popup-buttons { display: flex; gap: 10px; justify-content: center; }
+        .popup-buttons a, .popup-buttons button { text-decoration: none; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; font-size: 1em; flex-grow: 1; }
+        .popup-buttons a { background-color: var(--whatsapp-color); color: white; }
+        .popup-buttons button { background-color: #e0e0e0; color: #333; }
         @media (max-width: 600px) {
             .container { padding: 20px 15px; } .form-rekod { grid-template-columns: 1fr; gap: 20px; }
+            th, td { padding: 12px 5px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Rekod Ketidakhadiran (1 Ikhlas)</h1>
-        <!-- Borang HTML (Frontend) -->
         <form class="form-rekod" id="rekodBorang">
-            <!-- Isi borang tidak berubah -->
             <div class="form-group full-width"><label for="nama">Nama Murid</label><input type="text" id="nama" placeholder="Cth: Ahmad bin Abu" required></div>
             <div class="form-group"><label for="tarikh">Tarikh Tidak Hadir</label><input type="date" id="tarikh" required></div>
             <div class="form-group"><label for="sebab">Sebab Ketidakhadiran</label><select id="sebab" required><option value="" disabled selected>-- Sila Pilih Sebab --</option><option value="Sakit">Sakit</option><option value="Demam">Demam</option><option value="Kecemasan Keluarga">Kecemasan Keluarga</option><option value="Urusan Peribadi">Urusan Peribadi</option><option value="Lain-lain">Lain-lain</option></select></div>
             <button type="submit">Rekod & Simpan</button>
         </form>
-        <!-- Jadual Log Interaktif -->
         <div id="log-container">
-            <h2>Log Terkini</h2>
+            <h2>Log Terkini (Hari Ini)</h2>
             <table>
                 <thead><tr><th>Bil.</th><th>Tarikh</th><th>Hari</th><th>Nama</th><th>Sebab</th></tr></thead>
                 <tbody id="logBadan"><tr id="loading-message"><td colspan="5">Sedang memuatkan data...</td></tr></tbody>
             </table>
         </div>
     </div>
-    <!-- Pop-up tidak berubah -->
-    <!-- ... (kod pop-up di sini) ... -->
+    <div class="popup-overlay" id="popup-container">
+        <div class="popup-content">
+            <h3>Rekod Berjaya Dihantar!</h3>
+            <p>Sila tunggu sebentar untuk log dikemas kini.</p>
+            <div class="popup-summary" id="popup-summary-text"></div>
+            <div class="popup-buttons"><a href="#" id="popup-share-link" target="_blank" rel="noopener noreferrer">Kongsi ke WhatsApp</a><button id="popup-close-button">Tutup</button></div>
+        </div>
+    </div>
 
-    <!-- =========== KOD JAVASCRIPT BARU DENGAN GOOGLE SHEET =========== -->
+    <!-- =========== KOD JAVASCRIPT YANG TELAH DIKONFIGURASI =========== -->
     <script>
-        // ##########################################################################
-        // ##### PENTING: KONFIGURASI ANDA DI SINI #####
-        // ##########################################################################
-
-        // 1. Tampal URL Aplikasi Web (Web App URL) dari Apps Script anda di sini
-        const GOOGLE_SHEET_API_URL = "MASUKKAN_URL_APPS_SCRIPT_ANDA_DI_SINI";
-        
-        // 2. Tampal URL & ID Google Form anda untuk PENGHANTARAN data
-        const GOOGLE_FORM_ACTION_URL = "MASUKKAN_URL_ACTION_BORANG_ANDA_DI_SINI";
+        // ##### KONFIGURASI ANDA SUDAH DIMASUKKAN #####
+        const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxH30jnub4LFBmZmRMRKejy0gn7gBUad8KLVos3T1vkE6xRlmg_N48Wdw4RHgeszdX-/exec";
+        const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLScq1HE1mv5qwM9x0TuHTkgdqnt2K-Tno-TQQ7aW7nDyxi_7FQ/formResponse";
         const GOOGLE_ENTRY_ID = {
-            nama: "MASUKKAN_ID_ENTRI_NAMA_DI_SINI",
-            tarikh: "MASUKKAN_ID_ENTRI_TARIKH_DI_SINI",
-            hari: "MASUKKAN_ID_ENTRI_HARI_DI_SINI",
-            sebab: "MASUKKAN_ID_ENTRI_SEBAB_DI_SINI"
+            nama: "entry.2110370128",
+            tarikh: "entry.1699370199",
+            hari: "entry.1138384661",
+            sebab: "entry.1972215413"
         };
-        // ##########################################################################
+        const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/GANTIKAN_DENGAN_KOD_JEMPUTAN_GRUP_ANDA";
         
         document.addEventListener("DOMContentLoaded", function() {
             const borang = document.getElementById("rekodBorang");
             const logBadanTabel = document.getElementById("logBadan");
             const namaHari = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+            const popupContainer = document.getElementById("popup-container");
+            const popupCloseButton = document.getElementById("popup-close-button");
+            const popupShareLink = document.getElementById("popup-share-link");
+            const popupSummaryText = document.getElementById("popup-summary-text");
 
-            // FUNGSI BARU: Muat naik data dari Google Sheet apabila halaman dibuka
             async function muatNaikDataDariSheet() {
-                logBadanTabel.innerHTML = `<tr id="loading-message"><td colspan="5">Sedang memuatkan data dari Google Sheet...</td></tr>`;
+                logBadanTabel.innerHTML = `<tr id="loading-message"><td colspan="5">Menyambung ke Google Sheet...</td></tr>`;
                 try {
                     const response = await fetch(GOOGLE_SHEET_API_URL);
+                    if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
                     const data = await response.json();
                     
-                    logBadanTabel.innerHTML = ''; // Kosongkan jadual
-
-                    if (data.length === 0) {
-                        logBadanTabel.innerHTML = `<tr id="tiada-rekod"><td colspan="5">Tiada rekod ditemui.</td></tr>`;
+                    logBadanTabel.innerHTML = '';
+                    if (data.length === 0 || data.error) {
+                        logBadanTabel.innerHTML = `<tr id="tiada-rekod"><td colspan="5">Tiada rekod untuk hari ini.</td></tr>`;
                         return;
                     }
-                    
-                    // Terbalikkan data supaya yang terbaru di atas
-                    data.reverse().forEach((rekod, index) => {
+                    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort paling baru di atas
+                    data.forEach((rekod, index) => {
                         kemaskiniJadualLokal(rekod, index + 1);
                     });
-
                 } catch (error) {
                     console.error("Gagal memuat naik data dari Sheet:", error);
-                    logBadanTabel.innerHTML = `<tr><td colspan="5">Gagal memuat naik data. Sila semak URL API anda.</td></tr>`;
+                    logBadanTabel.innerHTML = `<tr><td colspan="5">Gagal memuat naik data. Pastikan URL Apps Script betul & telah dilaksana semula (re-deploy).</td></tr>`;
                 }
             }
             
-            // Panggil fungsi ini sebaik sahaja halaman sedia
             muatNaikDataDariSheet();
 
-            // Apabila borang dihantar
             borang.addEventListener("submit", function(event) {
                 event.preventDefault();
                 const namaInput = document.getElementById("nama").value;
@@ -119,13 +122,12 @@
                 const hariValue = namaHari[tarikhObj.getDay()];
                 const tarikhFormat = tarikhObj.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-                // Hantar data ke Google Form seperti biasa
                 hantarKeGoogleSheets(namaInput, tarikhFormat, hariValue, sebabInput);
+                tunjukPopup(namaInput, tarikhFormat, hariValue, sebabInput);
                 
-                // Beri sedikit masa untuk Google Sheet dikemas kini, kemudian muat semula data
                 setTimeout(() => {
-                    muatNaikDataDariSheet(); // Muat semula jadual dengan data terkini
-                }, 2000); // Tunggu 2 saat
+                    muatNaikDataDariSheet();
+                }, 3000);
 
                 borang.reset();
             });
@@ -147,7 +149,19 @@
                 formData.append(GOOGLE_ENTRY_ID.sebab, sebab);
                 fetch(GOOGLE_FORM_ACTION_URL, { method: "POST", body: formData, mode: "no-cors" });
             }
+
+            function tunjukPopup(nama, tarikh, hari, sebab) {
+                const ringkasanHTML = `<strong>Nama:</strong> ${nama}<br><strong>Tarikh:</strong> ${tarikh} (${hari})<br><strong>Sebab:</strong> ${sebab}`;
+                popupSummaryText.innerHTML = ringkasanHTML;
+                const mesejWhatsApp = `*Makluman Ketidakhadiran Murid (1 Ikhlas)*\n\n*Nama:* ${nama}\n*Tarikh:* ${tarikh} (${hari})\n*Sebab:* ${sebab}\n\nMakluman ini dijana secara automatik.`;
+                popupShareLink.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(mesejWhatsApp)}`;
+                popupContainer.classList.add("show");
+            }
+            function sembunyiPopup() { popupContainer.classList.remove("show"); }
+            popupCloseButton.addEventListener("click", sembunyiPopup);
+            popupContainer.addEventListener("click", (e) => { if (e.target === popupContainer) { sembunyiPopup(); } });
         });
     </script>
 </body>
 </html>
+
