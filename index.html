@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekod Kehadiran</title>
     
-    <!-- CSS tidak berubah -->
     <style>
         :root {
             --primary-color: #0056b3; --whatsapp-color: #25D366; --light-gray: #ffffff; --border-color: #dde1e3;
-            --font-size-base: clamp(14px, 1.5vw + 0.5rem, 16px); --font-size-h1: clamp(1.5rem, 5vw + 1rem, 2.25rem);
+            --font-size-base: clamp(14px, 1.5vw + 0.5rem, 16px);
+            /* PERUBAHAN 1: Saiz fon H1 diselaraskan supaya lebih kecil di telefon */
+            --font-size-h1: clamp(1.2rem, 4vw + 0.8rem, 2.2rem);
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--light-gray); margin: 0; padding: 0; color: #333; font-size: var(--font-size-base); }
         .container { width: 100%; padding: 25px 30px; box-sizing: border-box; }
@@ -20,16 +21,19 @@
         .form-group input, .form-group select { width: 100%; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.15); }
         button[type="submit"] { grid-column: 1 / -1; padding: 14px 20px; font-size: 1em; font-weight: 600; color: #ffffff; background-color: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
-        #log-container { margin-top: 30px; } h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-weight: 600; font-size: 1.5em; }
+        .log-section { margin-top: 40px; }
+        h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-weight: 600; font-size: 1.5em; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { text-align: left; padding: 14px 10px; border-bottom: 1px solid #eef0f2; }
         th:first-child, td:first-child { width: 40px; text-align: center; }
         thead tr { background-color: #f9fafb; } th { font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
-        #loading-message { text-align: center; color: #888; font-style: italic; }
+        .loading-message { text-align: center; color: #888; font-style: italic; }
         .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .popup-overlay.show { opacity: 1; visibility: visible; }
         .popup-content { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; transform: scale(0.9); transition: transform 0.3s; }
         .popup-content h3 { margin-top: 0; color: #333; }
+        /* PERUBAHAN 4: Teks pop-up diubah */
+        .popup-content p { font-size: 0.95em; color: #666; margin-bottom: 15px; }
         .popup-summary { text-align: left; margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-left: 4px solid var(--primary-color); border-radius: 4px; color: #555; line-height: 1.6; }
         .popup-buttons { display: flex; gap: 10px; justify-content: center; }
         .popup-buttons a, .popup-buttons button { text-decoration: none; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; font-size: 1em; flex-grow: 1; }
@@ -50,24 +54,36 @@
             <div class="form-group"><label for="sebab">Sebab Ketidakhadiran</label><select id="sebab" required><option value="" disabled selected>-- Sila Pilih Sebab --</option><option value="Sakit">Sakit</option><option value="Demam">Demam</option><option value="Kecemasan Keluarga">Kecemasan Keluarga</option><option value="Urusan Peribadi">Urusan Peribadi</option><option value="Lain-lain">Lain-lain</option></select></div>
             <button type="submit">Rekod & Simpan</button>
         </form>
-        <div id="log-container">
-            <h2>Log Terkini (Hari Ini)</h2>
+
+        <div class="log-section" id="daily-log-container">
+            <!-- PERUBAHAN 2: Tajuk diubah -->
+            <h2>Ketidakhadiran Hari Ini</h2>
             <table>
                 <thead><tr><th>Bil.</th><th>Tarikh</th><th>Hari</th><th>Nama</th><th>Sebab</th></tr></thead>
-                <tbody id="logBadan"><tr id="loading-message"><td colspan="5">Sedang memuatkan data...</td></tr></tbody>
+                <tbody id="logBadanHarian"><tr class="loading-message"><td colspan="5">Sedang memuatkan data...</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- PERUBAHAN 3: Seksyen baharu untuk rekod bulanan -->
+        <div class="log-section" id="monthly-log-container">
+            <h2>Rekod Ketidakhadiran Bulan Ini</h2>
+            <table>
+                <thead><tr><th>Ked.</th><th>Nama Murid</th><th>Jumlah Tidak Hadir</th></tr></thead>
+                <tbody id="logBadanBulanan"><tr class="loading-message"><td colspan="3">Sedang mengira data...</td></tr></tbody>
             </table>
         </div>
     </div>
+
     <div class="popup-overlay" id="popup-container">
         <div class="popup-content">
             <h3>Rekod Berjaya Dihantar!</h3>
-            <p>Sila tunggu sebentar untuk log dikemas kini.</p>
+            <!-- PERUBAHAN 4: Teks pop-up diubah -->
+            <p><strong>Makluman Penting:</strong> Anda diwajibkan untuk berkongsi maklumat ini ke kumpulan WhatsApp kelas dengan segera.</p>
             <div class="popup-summary" id="popup-summary-text"></div>
             <div class="popup-buttons"><a href="#" id="popup-share-link" target="_blank" rel="noopener noreferrer">Kongsi ke WhatsApp</a><button id="popup-close-button">Tutup</button></div>
         </div>
     </div>
 
-    <!-- =========== KOD JAVASCRIPT YANG TELAH DIKONFIGURASI =========== -->
     <script>
         // ##### KONFIGURASI ANDA SUDAH DIMASUKKAN #####
         const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxH30jnub4LFBmZmRMRKejy0gn7gBUad8KLVos3T1vkE6xRlmg_N48Wdw4RHgeszdX-/exec";
@@ -81,8 +97,10 @@
         const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/GANTIKAN_DENGAN_KOD_JEMPUTAN_GRUP_ANDA";
         
         document.addEventListener("DOMContentLoaded", function() {
+            // Rujukan kepada elemen HTML
             const borang = document.getElementById("rekodBorang");
-            const logBadanTabel = document.getElementById("logBadan");
+            const logBadanHarian = document.getElementById("logBadanHarian");
+            const logBadanBulanan = document.getElementById("logBadanBulanan");
             const namaHari = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
             const popupContainer = document.getElementById("popup-container");
             const popupCloseButton = document.getElementById("popup-close-button");
@@ -90,24 +108,23 @@
             const popupSummaryText = document.getElementById("popup-summary-text");
 
             async function muatNaikDataDariSheet() {
-                logBadanTabel.innerHTML = `<tr id="loading-message"><td colspan="5">Menyambung ke Google Sheet...</td></tr>`;
+                logBadanHarian.innerHTML = `<tr class="loading-message"><td colspan="5">Menyambung ke Google Sheet...</td></tr>`;
+                logBadanBulanan.innerHTML = `<tr class="loading-message"><td colspan="3">Menunggu data harian...</td></tr>`;
                 try {
                     const response = await fetch(GOOGLE_SHEET_API_URL);
                     if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                    const data = await response.json();
+                    const dataBulanan = await response.json();
                     
-                    logBadanTabel.innerHTML = '';
-                    if (data.length === 0 || data.error) {
-                        logBadanTabel.innerHTML = `<tr id="tiada-rekod"><td colspan="5">Tiada rekod untuk hari ini.</td></tr>`;
-                        return;
-                    }
-                    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort paling baru di atas
-                    data.forEach((rekod, index) => {
-                        kemaskiniJadualLokal(rekod, index + 1);
-                    });
+                    if (dataBulanan.error) { throw new Error(dataBulanan.error); }
+                    
+                    paparkanRekodHarian(dataBulanan);
+                    paparkanRekodBulanan(dataBulanan);
+
                 } catch (error) {
                     console.error("Gagal memuat naik data dari Sheet:", error);
-                    logBadanTabel.innerHTML = `<tr><td colspan="5">Gagal memuat naik data. Pastikan URL Apps Script betul & telah dilaksana semula (re-deploy).</td></tr>`;
+                    const mesejRalat = `<tr><td colspan="5">Gagal memuat naik data. Sila pastikan URL Apps Script betul & telah dilaksana semula (re-deploy).</td></tr>`;
+                    logBadanHarian.innerHTML = mesejRalat;
+                    logBadanBulanan.innerHTML = mesejRalat.replace('colspan="5"', 'colspan="3"');
                 }
             }
             
@@ -125,20 +142,50 @@
                 hantarKeGoogleSheets(namaInput, tarikhFormat, hariValue, sebabInput);
                 tunjukPopup(namaInput, tarikhFormat, hariValue, sebabInput);
                 
-                setTimeout(() => {
-                    muatNaikDataDariSheet();
-                }, 3000);
-
+                setTimeout(() => { muatNaikDataDariSheet(); }, 3000);
                 borang.reset();
             });
 
-            function kemaskiniJadualLokal(data, bil) {
-                const barisBaru = logBadanTabel.insertRow();
-                barisBaru.insertCell(0).textContent = bil;
-                barisBaru.insertCell(1).textContent = data.tarikh;
-                barisBaru.insertCell(2).textContent = data.hari;
-                barisBaru.insertCell(3).textContent = data.nama;
-                barisBaru.insertCell(4).textContent = data.sebab;
+            function paparkanRekodHarian(dataBulanan) {
+                const today = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const rekodHariIni = dataBulanan.filter(rekod => rekod.tarikh === today);
+                
+                logBadanHarian.innerHTML = '';
+                if (rekodHariIni.length === 0) {
+                    logBadanHarian.innerHTML = `<tr><td colspan="5">Tiada rekod untuk hari ini.</td></tr>`;
+                } else {
+                    rekodHariIni.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    rekodHariIni.forEach((rekod, index) => {
+                        const barisBaru = logBadanHarian.insertRow();
+                        barisBaru.insertCell(0).textContent = index + 1;
+                        barisBaru.insertCell(1).textContent = rekod.tarikh;
+                        barisBaru.insertCell(2).textContent = rekod.hari;
+                        barisBaru.insertCell(3).textContent = rekod.nama;
+                        barisBaru.insertCell(4).textContent = rekod.sebab;
+                    });
+                }
+            }
+
+            function paparkanRekodBulanan(dataBulanan) {
+                logBadanBulanan.innerHTML = '';
+                if (dataBulanan.length === 0) {
+                    logBadanBulanan.innerHTML = `<tr><td colspan="3">Tiada rekod untuk bulan ini.</td></tr>`;
+                    return;
+                }
+
+                const kiraan = dataBulanan.reduce((acc, rekod) => {
+                    acc[rekod.nama] = (acc[rekod.nama] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const dataDisusun = Object.entries(kiraan).sort(([,a],[,b]) => b - a);
+
+                dataDisusun.forEach(([nama, bilangan], index) => {
+                    const barisBaru = logBadanBulanan.insertRow();
+                    barisBaru.insertCell(0).textContent = index + 1;
+                    barisBaru.insertCell(1).textContent = nama;
+                    barisBaru.insertCell(2).textContent = bilangan;
+                });
             }
 
             function hantarKeGoogleSheets(nama, tarikh, hari, sebab) {
@@ -164,4 +211,3 @@
     </script>
 </body>
 </html>
-
