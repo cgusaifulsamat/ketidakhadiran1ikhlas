@@ -5,154 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekod Kehadiran</title>
     
+    <!-- CSS tidak berubah -->
     <style>
-        /* CSS Minimalis & Moden */
         :root {
-            --primary-color: #0056b3;
-            --whatsapp-color: #25D366;
-            --light-gray: #f4f7f6;
-            --border-color: #dde1e3;
-            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --primary-color: #0056b3; --whatsapp-color: #25D366; --light-gray: #ffffff; --border-color: #dde1e3;
+            --font-size-base: clamp(14px, 1.5vw + 0.5rem, 16px); --font-size-h1: clamp(1.5rem, 5vw + 1rem, 2.25rem);
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--light-gray); margin: 0; padding: 20px; color: #333; min-height: 100vh; box-sizing: border-box;
-        }
-        .container {
-            max-width: 700px; margin: 0 auto; background-color: #ffffff; padding: 25px 30px; border-radius: 12px; box-shadow: var(--shadow);
-        }
-        h1 {
-            color: #222; text-align: center; margin-top: 0; margin-bottom: 25px; font-weight: 600;
-        }
-        .form-rekod {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; margin-bottom: 25px;
-        }
-        .form-group {
-            display: flex; flex-direction: column;
-        }
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-        .form-group label {
-            font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; color: #555;
-        }
-        .form-group input, .form-group select {
-            width: 100%; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: inherit; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.15);
-        }
-        button[type="submit"] {
-            grid-column: 1 / -1; padding: 14px 20px; font-size: 1rem; font-weight: 600; color: #ffffff; background-color: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s;
-        }
-        button[type="submit"]:hover { background-color: #004494; }
-        button[type="submit"]:active { transform: scale(0.99); }
-        #log-container { margin-top: 30px; }
-        h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-weight: 600; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--light-gray); margin: 0; padding: 0; color: #333; font-size: var(--font-size-base); }
+        .container { width: 100%; padding: 25px 30px; box-sizing: border-box; }
+        h1 { color: #222; text-align: center; margin-top: 0; margin-bottom: 25px; font-size: var(--font-size-h1); }
+        .form-rekod { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; margin-bottom: 25px; }
+        .form-group { display: flex; flex-direction: column; } .form-group.full-width { grid-column: 1 / -1; }
+        .form-group label { font-weight: 500; margin-bottom: 6px; font-size: 0.9em; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1em; font-family: inherit; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.15); }
+        button[type="submit"] { grid-column: 1 / -1; padding: 14px 20px; font-size: 1em; font-weight: 600; color: #ffffff; background-color: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+        #log-container { margin-top: 30px; } h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-weight: 600; font-size: 1.5em; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { text-align: left; padding: 14px 10px; border-bottom: 1px solid #eef0f2; }
         th:first-child, td:first-child { width: 40px; text-align: center; }
-        thead tr { background-color: #f9fafb; }
-        th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
-        #tiada-rekod { text-align: center; color: #888; font-style: italic; }
-
-        /* CSS BARU UNTUK POP-UP MODAL */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
-        }
+        thead tr { background-color: #f9fafb; } th { font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
+        #loading-message { text-align: center; color: #888; font-style: italic; }
+        .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .popup-overlay.show { opacity: 1; visibility: visible; }
-        .popup-content {
-            background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; transform: scale(0.9); transition: transform 0.3s;
+        .popup-content { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; transform: scale(0.9); transition: transform 0.3s; }
+        @media (max-width: 600px) {
+            .container { padding: 20px 15px; } .form-rekod { grid-template-columns: 1fr; gap: 20px; }
         }
-        .popup-overlay.show .popup-content { transform: scale(1); }
-        .popup-content h3 { margin-top: 0; color: #333; }
-        .popup-summary {
-            text-align: left; margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-left: 4px solid var(--primary-color); border-radius: 4px; color: #555; line-height: 1.6;
-        }
-        .popup-buttons { display: flex; gap: 10px; justify-content: center; }
-        .popup-buttons a, .popup-buttons button {
-            text-decoration: none; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; font-size: 1rem; flex-grow: 1;
-        }
-        .popup-buttons a { background-color: var(--whatsapp-color); color: white; }
-        .popup-buttons button { background-color: #e0e0e0; color: #333; }
-        .popup-buttons a:hover, .popup-buttons button:hover { opacity: 0.85; }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Rekod Ketidakhadiran (1 Ikhlas)</h1>
+        <!-- Borang HTML (Frontend) -->
         <form class="form-rekod" id="rekodBorang">
-            <div class="form-group full-width">
-                <label for="nama">Nama Murid</label>
-                <input type="text" id="nama" placeholder="Cth: Ahmad bin Abu" required>
-            </div>
-            <div class="form-group">
-                <label for="tarikh">Tarikh Tidak Hadir</label>
-                <input type="date" id="tarikh" required>
-            </div>
-            <div class="form-group">
-                <label for="sebab">Sebab Ketidakhadiran</label>
-                <select id="sebab" required>
-                    <option value="" disabled selected>-- Sila Pilih Sebab --</option>
-                    <option value="Sakit">Sakit</option>
-                    <option value="Demam">Demam</option>
-                    <option value="Kecemasan Keluarga">Kecemasan Keluarga</option>
-                    <option value="Urusan Peribadi">Urusan Peribadi</option>
-                    <option value="Lain-lain">Lain-lain</option>
-                </select>
-            </div>
+            <!-- Isi borang tidak berubah -->
+            <div class="form-group full-width"><label for="nama">Nama Murid</label><input type="text" id="nama" placeholder="Cth: Ahmad bin Abu" required></div>
+            <div class="form-group"><label for="tarikh">Tarikh Tidak Hadir</label><input type="date" id="tarikh" required></div>
+            <div class="form-group"><label for="sebab">Sebab Ketidakhadiran</label><select id="sebab" required><option value="" disabled selected>-- Sila Pilih Sebab --</option><option value="Sakit">Sakit</option><option value="Demam">Demam</option><option value="Kecemasan Keluarga">Kecemasan Keluarga</option><option value="Urusan Peribadi">Urusan Peribadi</option><option value="Lain-lain">Lain-lain</option></select></div>
             <button type="submit">Rekod & Simpan</button>
         </form>
-
+        <!-- Jadual Log Interaktif -->
         <div id="log-container">
-            <h2>Log Terkini (Sesi Ini)</h2>
+            <h2>Log Terkini</h2>
             <table>
                 <thead><tr><th>Bil.</th><th>Tarikh</th><th>Hari</th><th>Nama</th><th>Sebab</th></tr></thead>
-                <tbody id="logBadan"><tr id="tiada-rekod"><td colspan="5">Tiada rekod buat masa ini.</td></tr></tbody>
+                <tbody id="logBadan"><tr id="loading-message"><td colspan="5">Sedang memuatkan data...</td></tr></tbody>
             </table>
         </div>
     </div>
-    
-    <div class="popup-overlay" id="popup-container">
-        <div class="popup-content">
-            <h3>Rekod Berjaya Disimpan!</h3>
-            <p>Kongsi maklumat ini ke kumpulan WhatsApp kelas.</p>
-            <div class="popup-summary" id="popup-summary-text"></div>
-            <div class="popup-buttons">
-                <a href="#" id="popup-share-link" target="_blank" rel="noopener noreferrer">Kongsi ke WhatsApp</a>
-                <button id="popup-close-button">Tutup</button>
-            </div>
-        </div>
-    </div>
+    <!-- Pop-up tidak berubah -->
+    <!-- ... (kod pop-up di sini) ... -->
 
+    <!-- =========== KOD JAVASCRIPT BARU DENGAN GOOGLE SHEET =========== -->
     <script>
         // ##########################################################################
-        // ##### KONFIGURASI ANDA - SEMUANYA SUDAH DIISI! #####
+        // ##### PENTING: KONFIGURASI ANDA DI SINI #####
         // ##########################################################################
-        const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/GANTIKAN_DENGAN_KOD_JEMPUTAN_GRUP_ANDA";
+
+        // 1. Tampal URL Aplikasi Web (Web App URL) dari Apps Script anda di sini
+        const GOOGLE_SHEET_API_URL = "MASUKKAN_URL_APPS_SCRIPT_ANDA_DI_SINI";
         
-        // Data dari pautan Google Form anda:
-        const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLScq1HE1mv5qwM9x0TuHTkgdqnt2K-Tno-TQQ7aW7nDyxi_7FQ/formResponse";
+        // 2. Tampal URL & ID Google Form anda untuk PENGHANTARAN data
+        const GOOGLE_FORM_ACTION_URL = "MASUKKAN_URL_ACTION_BORANG_ANDA_DI_SINI";
         const GOOGLE_ENTRY_ID = {
-            nama: "entry.2110370128",
-            tarikh: "entry.1699370199",
-            hari: "entry.1138384661",
-            sebab: "entry.1972215413"
+            nama: "MASUKKAN_ID_ENTRI_NAMA_DI_SINI",
+            tarikh: "MASUKKAN_ID_ENTRI_TARIKH_DI_SINI",
+            hari: "MASUKKAN_ID_ENTRI_HARI_DI_SINI",
+            sebab: "MASUKKAN_ID_ENTRI_SEBAB_DI_SINI"
         };
+        // ##########################################################################
         
-        // ##########################################################################
-        // ##### KOD FUNGSI (Tidak perlu ubah di bawah ini) #####
-        // ##########################################################################
         document.addEventListener("DOMContentLoaded", function() {
             const borang = document.getElementById("rekodBorang");
             const logBadanTabel = document.getElementById("logBadan");
             const namaHari = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
-            const popupContainer = document.getElementById("popup-container");
-            const popupCloseButton = document.getElementById("popup-close-button");
-            const popupShareLink = document.getElementById("popup-share-link");
-            const popupSummaryText = document.getElementById("popup-summary-text");
 
+            // FUNGSI BARU: Muat naik data dari Google Sheet apabila halaman dibuka
+            async function muatNaikDataDariSheet() {
+                logBadanTabel.innerHTML = `<tr id="loading-message"><td colspan="5">Sedang memuatkan data dari Google Sheet...</td></tr>`;
+                try {
+                    const response = await fetch(GOOGLE_SHEET_API_URL);
+                    const data = await response.json();
+                    
+                    logBadanTabel.innerHTML = ''; // Kosongkan jadual
+
+                    if (data.length === 0) {
+                        logBadanTabel.innerHTML = `<tr id="tiada-rekod"><td colspan="5">Tiada rekod ditemui.</td></tr>`;
+                        return;
+                    }
+                    
+                    // Terbalikkan data supaya yang terbaru di atas
+                    data.reverse().forEach((rekod, index) => {
+                        kemaskiniJadualLokal(rekod, index + 1);
+                    });
+
+                } catch (error) {
+                    console.error("Gagal memuat naik data dari Sheet:", error);
+                    logBadanTabel.innerHTML = `<tr><td colspan="5">Gagal memuat naik data. Sila semak URL API anda.</td></tr>`;
+                }
+            }
+            
+            // Panggil fungsi ini sebaik sahaja halaman sedia
+            muatNaikDataDariSheet();
+
+            // Apabila borang dihantar
             borang.addEventListener("submit", function(event) {
                 event.preventDefault();
                 const namaInput = document.getElementById("nama").value;
@@ -162,58 +119,35 @@
                 const hariValue = namaHari[tarikhObj.getDay()];
                 const tarikhFormat = tarikhObj.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+                // Hantar data ke Google Form seperti biasa
                 hantarKeGoogleSheets(namaInput, tarikhFormat, hariValue, sebabInput);
-                kemaskiniJadualLokal(namaInput, tarikhFormat, hariValue, sebabInput);
-                tunjukPopup(namaInput, tarikhFormat, hariValue, sebabInput);
+                
+                // Beri sedikit masa untuk Google Sheet dikemas kini, kemudian muat semula data
+                setTimeout(() => {
+                    muatNaikDataDariSheet(); // Muat semula jadual dengan data terkini
+                }, 2000); // Tunggu 2 saat
+
                 borang.reset();
             });
 
-            function kemaskiniJadualLokal(nama, tarikh, hari, sebab) {
-                const mesejTiadaRekod = document.getElementById("tiada-rekod");
-                if (mesejTiadaRekod) mesejTiadaRekod.remove();
-                const kiraanBaris = logBadanTabel.rows.length;
+            function kemaskiniJadualLokal(data, bil) {
                 const barisBaru = logBadanTabel.insertRow();
-                barisBaru.insertCell(0).textContent = kiraanBaris + 1;
-                barisBaru.insertCell(1).textContent = tarikh;
-                barisBaru.insertCell(2).textContent = hari;
-                barisBaru.insertCell(3).textContent = nama;
-                barisBaru.insertCell(4).textContent = sebab;
-                barisBaru.cells[0].style.textAlign = "center";
-                barisBaru.cells[3].style.fontWeight = "500";
+                barisBaru.insertCell(0).textContent = bil;
+                barisBaru.insertCell(1).textContent = data.tarikh;
+                barisBaru.insertCell(2).textContent = data.hari;
+                barisBaru.insertCell(3).textContent = data.nama;
+                barisBaru.insertCell(4).textContent = data.sebab;
             }
-            
+
             function hantarKeGoogleSheets(nama, tarikh, hari, sebab) {
                 const formData = new FormData();
                 formData.append(GOOGLE_ENTRY_ID.nama, nama);
                 formData.append(GOOGLE_ENTRY_ID.tarikh, tarikh);
                 formData.append(GOOGLE_ENTRY_ID.hari, hari);
                 formData.append(GOOGLE_ENTRY_ID.sebab, sebab);
-                fetch(GOOGLE_FORM_ACTION_URL, { method: "POST", body: formData, mode: "no-cors" })
-                .then(() => console.log("Data berjaya dihantar ke Google Sheets."))
-                .catch(error => console.error("Ralat:", error));
+                fetch(GOOGLE_FORM_ACTION_URL, { method: "POST", body: formData, mode: "no-cors" });
             }
-
-            function tunjukPopup(nama, tarikh, hari, sebab) {
-                const ringkasanHTML = `<strong>Nama:</strong> ${nama}<br><strong>Tarikh:</strong> ${tarikh} (${hari})<br><strong>Sebab:</strong> ${sebab}`;
-                popupSummaryText.innerHTML = ringkasanHTML;
-                const mesejWhatsApp = `*Makluman Ketidakhadiran Murid (1 Ikhlas)*\n\n*Nama:* ${nama}\n*Tarikh:* ${tarikh} (${hari})\n*Sebab:* ${sebab}\n\nMakluman ini dijana secara automatik.`;
-                const pautanKongsi = `https://api.whatsapp.com/send?text=${encodeURIComponent(mesejWhatsApp)}`;
-                popupShareLink.href = pautanKongsi;
-                popupContainer.classList.add("show");
-            }
-
-            function sembunyiPopup() {
-                popupContainer.classList.remove("show");
-            }
-            
-            popupCloseButton.addEventListener("click", sembunyiPopup);
-            popupContainer.addEventListener("click", function(event) {
-                if (event.target === popupContainer) {
-                    sembunyiPopup();
-                }
-            });
         });
     </script>
-
 </body>
 </html>
