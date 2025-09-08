@@ -61,7 +61,6 @@
             <div class="form-group full-width"><label for="nama">Nama Murid</label><input type="text" id="nama" placeholder="Cth: Ahmad bin Abu" required></div>
             <div class="form-group"><label for="tarikh">Tarikh Tidak Hadir</label><input type="date" id="tarikh" required></div>
             <div class="form-group"><label for="sebab">Sebab Ketidakhadiran</label>
-                <!-- Opsyen di sini akan diisi secara dinamik oleh JavaScript -->
                 <select id="sebab" required><option value="" disabled selected>-- Memuatkan pilihan --</option></select>
             </div>
             <button type="submit">Rekod & Simpan</button>
@@ -85,7 +84,12 @@
     </div>
 
     <div class="popup-overlay" id="popup-container">
-        <!-- ... (kod pop-up tidak berubah) ... -->
+        <div class="popup-content">
+            <h3>Rekod Berjaya Dihantar!</h3>
+            <p><strong>Makluman Penting:</strong> Anda diwajibkan untuk berkongsi maklumat ini ke kumpulan WhatsApp kelas dengan segera.</p>
+            <div class="popup-summary" id="popup-summary-text"></div>
+            <div class="popup-buttons"><a href="#" id="popup-share-link" target="_blank" rel="noopener noreferrer">Kongsi ke WhatsApp</a><button id="popup-close-button">Tutup</button></div>
+        </div>
     </div>
 
     <script>
@@ -98,6 +102,7 @@
             hari: "entry.1138384661",
             sebab: "entry.1972215413"
         };
+        const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/GANTIKAN_DENGAN_KOD_JEMPUTAN_GRUP_ANDA";
         
         document.addEventListener("DOMContentLoaded", function() {
             const borang = document.getElementById("rekodBorang");
@@ -107,7 +112,11 @@
             const sebabDropdown = document.getElementById("sebab");
             const namaHari = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
             const namaBulan = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
-            
+            const popupContainer = document.getElementById("popup-container");
+            const popupCloseButton = document.getElementById("popup-close-button");
+            const popupShareLink = document.getElementById("popup-share-link");
+            const popupSummaryText = document.getElementById("popup-summary-text");
+
             function paparkanTarikhHariIni() {
                 const now = new Date();
                 paparanTarikhSemasa.textContent = `${namaHari[now.getDay()]}, ${now.getDate()} ${namaBulan[now.getMonth()]} ${now.getFullYear()}`;
@@ -115,7 +124,8 @@
             paparkanTarikhHariIni();
 
             async function muatNaikDataDariSheet() {
-                // ... (kod muat naik data tidak berubah, tetapi kini akan memanggil paparkanPilihanSebab) ...
+                logBadanHarian.innerHTML = `<tr class="loading-message"><td colspan="3">Menyambung ke Google Sheet...</td></tr>`;
+                logBadanBulanan.innerHTML = `<tr class="loading-message"><td colspan="3">Menunggu data harian...</td></tr>`;
                 try {
                     const response = await fetch(GOOGLE_SHEET_API_URL);
                     if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
@@ -139,16 +149,11 @@
             }
             muatNaikDataDariSheet();
 
-            // FUNGSI BARU: Untuk mengisi menu lungsur 'Sebab'
             function paparkanPilihanSebab(senaraiSebab) {
-                // Kosongkan opsyen lama (kecuali yang pertama)
                 while (sebabDropdown.options.length > 1) {
                     sebabDropdown.remove(1);
                 }
-                
-                // Tukar teks placeholder
                 sebabDropdown.options[0].textContent = "-- Sila Pilih Sebab --";
-
                 if (senaraiSebab && senaraiSebab.length > 0) {
                     senaraiSebab.forEach(sebab => {
                         const option = document.createElement("option");
@@ -157,7 +162,6 @@
                         sebabDropdown.appendChild(option);
                     });
                 } else {
-                    // Jika helaian "Sebab" kosong, gunakan opsyen sandaran
                     const opsyenSandaran = ["Sakit", "Demam", "Urusan Keluarga"];
                     opsyenSandaran.forEach(sebab => {
                         const option = document.createElement("option");
@@ -168,7 +172,6 @@
                 }
             }
 
-            // ... (baki kod JavaScript tidak berubah) ...
             borang.addEventListener("submit", function(event) {
                 event.preventDefault();
                 const namaInput = document.getElementById("nama").value;
@@ -177,12 +180,77 @@
                 const tarikhObj = new Date(tarikhInput + 'T00:00:00');
                 const hariValue = namaHari[tarikhObj.getDay()];
                 const tarikhFormat = tarikhObj.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                
                 hantarKeGoogleSheets(namaInput, tarikhFormat, hariValue, sebabInput);
-                // tunjukPopup(...) masih akan berfungsi seperti biasa
+                tunjukPopup(namaInput, tarikhFormat, hariValue, sebabInput); // Fungsi dipanggil semula
+                
                 setTimeout(() => { muatNaikDataDariSheet(); }, 3000);
                 borang.reset();
             });
-            // ... (baki fungsi paparkanRekodHarian, paparkanRekodBulanan, hantarKeGoogleSheets, tunjukPopup, dsb.)
+            
+            function paparkanRekodHarian(dataBulanan) {
+                const today = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const rekodHariIni = dataBulanan.filter(rekod => rekod && rekod.tarikh === today);
+                
+                logBadanHarian.innerHTML = '';
+                if (rekodHariIni.length === 0) {
+                    logBadanHarian.innerHTML = `<tr><td colspan="3">Tiada rekod untuk hari ini.</td></tr>`;
+                } else {
+                    rekodHariIni.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                    rekodHariIni.forEach((rekod, index) => {
+                        const barisBaru = logBadanHarian.insertRow();
+                        barisBaru.insertCell(0).textContent = index + 1;
+                        barisBaru.insertCell(1).textContent = rekod.nama;
+                        barisBaru.insertCell(2).textContent = rekod.sebab;
+                    });
+                }
+            }
+
+            function paparkanRekodBulanan(dataBulanan) {
+                logBadanBulanan.innerHTML = '';
+                if (!dataBulanan || dataBulanan.length === 0) {
+                    logBadanBulanan.innerHTML = `<tr><td colspan="3">Tiada rekod untuk bulan ini.</td></tr>`;
+                    return;
+                }
+
+                const kiraan = dataBulanan.reduce((acc, rekod) => {
+                    if (rekod && rekod.nama) { // Pemeriksaan keselamatan
+                        const namaMurid = rekod.nama.trim().toUpperCase();
+                        acc[namaMurid] = (acc[namaMurid] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+
+                const dataDisusun = Object.entries(kiraan).sort(([,a],[,b]) => b - a);
+
+                dataDisusun.forEach(([nama, bilangan], index) => {
+                    const barisBaru = logBadanBulanan.insertRow();
+                    barisBaru.insertCell(0).textContent = index + 1;
+                    const namaPaparan = nama.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+                    barisBaru.insertCell(1).textContent = namaPaparan;
+                    barisBaru.insertCell(2).textContent = bilangan;
+                });
+            }
+
+            function hantarKeGoogleSheets(nama, tarikh, hari, sebab) {
+                const formData = new FormData();
+                formData.append(GOOGLE_ENTRY_ID.nama, nama);
+                formData.append(GOOGLE_ENTRY_ID.tarikh, tarikh);
+                formData.append(GOOGLE_ENTRY_ID.hari, hari);
+                formData.append(GOOGLE_ENTRY_ID.sebab, sebab);
+                fetch(GOOGLE_FORM_ACTION_URL, { method: "POST", body: formData, mode: "no-cors" });
+            }
+
+            function tunjukPopup(nama, tarikh, hari, sebab) {
+                const ringkasanHTML = `<strong>Nama:</strong> ${nama}<br><strong>Tarikh:</strong> ${tarikh} (${hari})<br><strong>Sebab:</strong> ${sebab}`;
+                popupSummaryText.innerHTML = ringkasanHTML;
+                const mesejWhatsApp = `*Makluman Ketidakhadiran Murid (1 Ikhlas)*\n\n*Nama:* ${nama}\n*Tarikh:* ${tarikh} (${hari})\n*Sebab:* ${sebab}\n\nMakluman ini dijana secara automatik.`;
+                popupShareLink.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(mesejWhatsApp)}`;
+                popupContainer.classList.add("show");
+            }
+            function sembunyiPopup() { popupContainer.classList.remove("show"); }
+            popupCloseButton.addEventListener("click", sembunyiPopup);
+            popupContainer.addEventListener("click", (e) => { if (e.target === popupContainer) { sembunyiPopup(); } });
         });
     </script>
 </body>
