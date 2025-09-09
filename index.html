@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekod Kehadiran</title>
     
-    <!-- LANGKAH 1: Memuat turun pustaka jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
@@ -41,9 +40,8 @@
         .popup-summary { text-align: left; margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-left: 4px solid var(--primary-color); border-radius: 4px; color: #555; line-height: 1.6; }
         .popup-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; justify-content: center; }
         .popup-buttons a, .popup-buttons button { text-decoration: none; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; font-size: 1em; }
-        .popup-buttons a { background-color: var(--whatsapp-color); color: white; grid-column: 1 / -1; } /* Butang WhatsApp kini lebar penuh */
+        .popup-buttons a { background-color: var(--whatsapp-color); color: white; grid-column: 1 / -1; }
         .popup-buttons button { background-color: #e0e0e0; color: #333; }
-        /* LANGKAH 2: Gaya untuk butang PDF baharu */
         #popup-generate-pdf { background-color: var(--pdf-color); color: white; }
         @media (max-width: 600px) {
             .container { padding: 20px 15px; } .form-rekod { grid-template-columns: 1fr; gap: 20px; }
@@ -53,14 +51,13 @@
 </head>
 <body>
     <div class="container">
-        <!-- ... (HTML container tidak berubah) ... -->
         <div class="logo-container">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Kementerian_Pendidikan_Malaysia_logo.svg/1200px-Kementerian_Pendidikan_Malaysia_logo.svg.png" alt="Logo KPM" onerror="this.style.display='none'">
             <img src="https://www.smkkotasamarahan.edu.my/wp-content/uploads/2021/01/cropped-logo-smkks-300x300-1.png" alt="Logo SMK Kota Samarahan" onerror="this.style.display='none'">
             <img src="https://storage.googleapis.com/maker-me/uploads/Maktabah%20Syamilah%20Melayu5.png" alt="Logo Maktabah Syamilah" onerror="this.style.display='none'">
         </div>
         <h1>Rekod Ketidakhadiran (1 Ikhlas)</h1>
-        <h4 id="current-date-display" class.current-date"></h4>
+        <h4 id="current-date-display" class="current-date"></h4>
         <form class="form-rekod" id="rekodBorang">
             <div class="form-group full-width"><label for="nama">Nama Murid</label><input type="text" id="nama" placeholder="Cth: Ahmad bin Abu" required></div>
             <div class="form-group"><label for="tarikh">Tarikh Tidak Hadir</label><input type="date" id="tarikh" required></div>
@@ -90,7 +87,6 @@
             <h3>Rekod Berjaya Dihantar!</h3>
             <p>Sila kongsi ke WhatsApp atau jana surat rasmi untuk simpanan/cetakan.</p>
             <div class="popup-summary" id="popup-summary-text"></div>
-            <!-- LANGKAH 2: Butang Jana PDF ditambah -->
             <div class="popup-buttons">
                 <a href="#" id="popup-share-link" target="_blank" rel="noopener noreferrer">Kongsi ke WhatsApp</a>
                 <button id="popup-generate-pdf">Jana Surat PDF</button>
@@ -109,14 +105,65 @@
         };
         
         document.addEventListener("DOMContentLoaded", function() {
-            // ... (banyak pemboleh ubah tidak berubah)
+            const borang = document.getElementById("rekodBorang");
+            const logBadanHarian = document.getElementById("logBadanHarian");
+            const logBadanBulanan = document.getElementById("logBadanBulanan");
+            const paparanTarikhSemasa = document.getElementById("current-date-display");
+            const sebabDropdown = document.getElementById("sebab");
+            const namaHari = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+            const namaBulan = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+            const popupContainer = document.getElementById("popup-container");
+            const popupCloseButton = document.getElementById("popup-close-button");
+            const popupShareLink = document.getElementById("popup-share-link");
+            const popupSummaryText = document.getElementById("popup-summary-text");
             const popupGeneratePdfButton = document.getElementById("popup-generate-pdf");
-            let dataRekodSemasa = {}; // Untuk menyimpan data bagi penjanaan PDF
+            let dataRekodSemasa = {};
 
-            // ... (fungsi paparkanTarikhHariIni, muatNaikDataDariSheet, paparkanPilihanSebab tidak berubah)
+            function paparkanTarikhHariIni() {
+                const now = new Date();
+                paparanTarikhSemasa.textContent = `${namaHari[now.getDay()]}, ${now.getDate()} ${namaBulan[now.getMonth()]} ${now.getFullYear()}`;
+            }
+            paparkanTarikhHariIni();
+
+            async function muatNaikDataDariSheet() {
+                logBadanHarian.innerHTML = `<tr class="loading-message"><td colspan="3">Menyambung ke Google Sheet...</td></tr>`;
+                logBadanBulanan.innerHTML = `<tr class="loading-message"><td colspan="3">Menunggu data...</td></tr>`;
+                try {
+                    const response = await fetch(GOOGLE_SHEET_API_URL);
+                    if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+                    const responseData = await response.json();
+                    if (responseData.error) { throw new Error(responseData.error); }
+                    
+                    const dataBulanan = responseData.monthlyRecords || [];
+                    const senaraiSebab = responseData.reasons || [];
+
+                    paparkanPilihanSebab(senaraiSebab);
+                    paparkanRekodHarian(dataBulanan);
+                    paparkanRekodBulanan(dataBulanan);
+                } catch (error) {
+                    console.error("Gagal memuat naik data:", error);
+                    const mesejRalat = `<tr><td colspan="3">Gagal memuat naik data. Sila semak Apps Script & pastikan ia telah dilaksana semula.</td></tr>`;
+                    logBadanHarian.innerHTML = mesejRalat;
+                    logBadanBulanan.innerHTML = mesejRalat;
+                }
+            }
+            muatNaikDataDariSheet();
+
+            function paparkanPilihanSebab(senaraiSebab) {
+                while (sebabDropdown.options.length > 1) sebabDropdown.remove(1);
+                sebabDropdown.options[0].textContent = "-- Sila Pilih Sebab --";
+                if (senaraiSebab.length > 0) {
+                    senaraiSebab.forEach(sebab => {
+                        const option = document.createElement("option");
+                        option.value = sebab;
+                        option.textContent = sebab;
+                        sebabDropdown.appendChild(option);
+                    });
+                }
+            }
             
             borang.addEventListener("submit", function(event) {
-                // ... (bahagian awal fungsi ini tidak berubah)
+                event.preventDefault();
                 const namaInput = document.getElementById("nama").value;
                 const sebabInput = document.getElementById("sebab").value;
                 const tarikhInput = document.getElementById("tarikh").value;
@@ -126,79 +173,87 @@
                 
                 hantarKeGoogleSheets(namaInput, tarikhFormat, hariValue, sebabInput);
                 tunjukPopup(namaInput, tarikhFormat, hariValue, sebabInput);
-                setTimeout(() => { muatNaikDataDariSheet(); }, 3000);
+                setTimeout(() => muatNaikDataDariSheet(), 3000);
                 borang.reset();
             });
 
-            // LANGKAH 3: Fungsi baharu untuk menjana PDF
+            function paparkanRekodHarian(dataBulanan) {
+                const today = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const rekodHariIni = dataBulanan.filter(rekod => rekod && rekod.tarikh === today);
+                logBadanHarian.innerHTML = '';
+                if (rekodHariIni.length === 0) {
+                    logBadanHarian.innerHTML = `<tr><td colspan="3">Tiada rekod untuk hari ini.</td></tr>`;
+                } else {
+                    rekodHariIni.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                    rekodHariIni.forEach((rekod, index) => {
+                        const barisBaru = logBadanHarian.insertRow();
+                        barisBaru.insertCell(0).textContent = index + 1;
+                        barisBaru.insertCell(1).textContent = rekod.nama;
+                        barisBaru.insertCell(2).textContent = rekod.sebab;
+                    });
+                }
+            }
+
+            function paparkanRekodBulanan(dataBulanan) {
+                logBadanBulanan.innerHTML = '';
+                if (!dataBulanan || dataBulanan.length === 0) {
+                    logBadanBulanan.innerHTML = `<tr><td colspan="3">Tiada rekod untuk bulan ini.</td></tr>`;
+                    return;
+                }
+                const kiraan = dataBulanan.reduce((acc, rekod) => {
+                    if (rekod && rekod.nama) {
+                        const namaMurid = rekod.nama.trim().toUpperCase();
+                        acc[namaMurid] = (acc[namaMurid] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+                const dataDisusun = Object.entries(kiraan).sort(([,a],[,b]) => b - a);
+                dataDisusun.forEach(([nama, bilangan], index) => {
+                    const barisBaru = logBadanBulanan.insertRow();
+                    barisBaru.insertCell(0).textContent = index + 1;
+                    const namaPaparan = nama.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+                    barisBaru.insertCell(1).textContent = namaPaparan;
+                    barisBaru.insertCell(2).textContent = bilangan;
+                });
+            }
+
+            function hantarKeGoogleSheets(nama, tarikh, hari, sebab) {
+                const formData = new FormData();
+                formData.append(GOOGLE_ENTRY_ID.nama, nama);
+                formData.append(GOOGLE_ENTRY_ID.tarikh, tarikh);
+                formData.append(GOOGLE_ENTRY_ID.hari, hari);
+                formData.append(GOOGLE_ENTRY_ID.sebab, sebab);
+                fetch(GOOGLE_FORM_ACTION_URL, { method: "POST", body: formData, mode: "no-cors" });
+            }
+
             function janaSuratPDF(data) {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4'); // p=portrait, mm=milimeter, A4
-
-                // Tetapan fon dan saiz
-                doc.setFont("times", "normal");
-                doc.setFontSize(12);
-
-                // Bahagian 1: Alamat Pengirim (anda boleh ubah)
-                const alamatPengirim = [
-                    "Nama Ibu Bapa / Penjaga",
-                    "Alamat Rumah,",
-                    "Jalan & Taman,",
-                    "Poskod, Bandar,",
-                    "Sarawak."
-                ];
+                const doc = new jsPDF('p', 'mm', 'a4');
+                doc.setFont("times", "normal"); doc.setFontSize(12);
+                const alamatPengirim = ["Nama Ibu Bapa / Penjaga", "Alamat Rumah,", "Jalan & Taman,", "Poskod, Bandar,", "Sarawak."];
                 doc.text(alamatPengirim, 195, 20, { align: 'right' });
-
-                // Bahagian 2: Garisan melintang
-                doc.setLineWidth(0.5);
-                doc.line(15, 50, 195, 50);
-
-                // Bahagian 3: Alamat Penerima & Tarikh
-                const alamatPenerima = [
-                    "Guru Kelas Tingkatan 1 Ikhlas,",
-                    "SMK Kota Samarahan,",
-                    "Jalan Dato Mohd Musa,",
-                    "94300 Kota Samarahan,",
-                    "Sarawak."
-                ];
+                doc.setLineWidth(0.5); doc.line(15, 50, 195, 50);
+                const alamatPenerima = ["Guru Kelas Tingkatan 1 Ikhlas,", "SMK Kota Samarahan,", "Jalan Dato Mohd Musa,", "94300 Kota Samarahan,", "Sarawak."];
                 doc.text(alamatPenerima, 15, 58);
                 const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
                 doc.text(tarikhHariIni, 195, 75, { align: 'right' });
-
-                // Bahagian 4: Tajuk Surat
-                doc.setFont("times", "bold");
-                doc.text("Tuan/Puan,", 15, 90);
-                doc.setFontSize(14);
-                doc.text("PERKARA: MAKLUMAN KETIDAKHADIRAN KE SEKOLAH", 105, 105, { align: 'center' });
-                doc.setFontSize(12);
-                doc.setFont("times", "normal");
-
-                // Bahagian 5: Isi Surat (Dinamik)
+                doc.setFont("times", "bold"); doc.text("Tuan/Puan,", 15, 90);
+                doc.setFontSize(14); doc.text("PERKARA: MAKLUMAN KETIDAKHADIRAN KE SEKOLAH", 105, 105, { align: 'center' });
+                doc.setFontSize(12); doc.setFont("times", "normal");
                 const perenggan1 = `Dengan segala hormatnya merujuk perkara di atas, saya ingin memaklumkan bahawa anak saya, ${data.nama}, tidak dapat hadir ke sekolah pada ${data.tarikh} (${data.hari}).`;
                 const perenggan2 = `2.     Ketidakhadiran anak saya adalah disebabkan oleh ${data.sebab.toLowerCase()}.`;
                 const perenggan3 = "3.     Segala kerjasama dan keprihatinan daripada pihak tuan/puan amatlah saya hargai.";
-                
-                // Menggunakan splitTextToSize untuk memastikan teks tidak terkeluar dari muka surat
                 const perenggan1Lines = doc.splitTextToSize(perenggan1, 180);
                 doc.text(perenggan1Lines, 15, 120);
-                
-                doc.text(perenggan2, 15, 135);
-                doc.text(perenggan3, 15, 145);
-
-                // Bahagian 6: Penutup
-                doc.text("Sekian, terima kasih.", 15, 165);
-                doc.text("Yang benar,", 15, 180);
+                doc.text(perenggan2, 15, 135); doc.text(perenggan3, 15, 145);
+                doc.text("Sekian, terima kasih.", 15, 165); doc.text("Yang benar,", 15, 180);
                 doc.text("...................................................", 15, 200);
-                doc.text(`( NAMA IBU BAPA / PENJAGA )`, 15, 205);
-                doc.text(`No. Telefon: 01X-XXXXXXX`, 15, 210);
-                
-                // Simpan fail PDF
+                doc.text(`( NAMA IBU BAPA / PENJAGA )`, 15, 205); doc.text(`No. Telefon: 01X-XXXXXXX`, 15, 210);
                 doc.save(`Surat_Tidak_Hadir_${data.nama.replace(/ /g, '_')}.pdf`);
             }
             
-            // Mengubah fungsi pop-up untuk menyimpan data semasa
             function tunjukPopup(nama, tarikh, hari, sebab) {
-                dataRekodSemasa = { nama, tarikh, hari, sebab }; // Simpan data
+                dataRekodSemasa = { nama, tarikh, hari, sebab };
                 const ringkasanHTML = `<strong>Nama:</strong> ${nama}<br><strong>Tarikh:</strong> ${tarikh} (${hari})<br><strong>Sebab:</strong> ${sebab}`;
                 popupSummaryText.innerHTML = ringkasanHTML;
                 const mesejWhatsApp = `*Makluman Ketidakhadiran Murid (1 Ikhlas)*\n\n*Nama:* ${nama}\n*Tarikh:* ${tarikh} (${hari})\n*Sebab:* ${sebab}\n\nMakluman ini dijana secara automatik.`;
@@ -206,12 +261,12 @@
                 popupContainer.classList.add("show");
             }
             
-            popupGeneratePdfButton.addEventListener("click", function() {
-                janaSuratPDF(dataRekodSemasa);
-            });
-
-            // ... (baki kod JavaScript tidak berubah: sembunyiPopup, paparkanRekodHarian, etc.)
+            function sembunyiPopup() { popupContainer.classList.remove("show"); }
+            popupGeneratePdfButton.addEventListener("click", () => janaSuratPDF(dataRekodSemasa));
+            popupCloseButton.addEventListener("click", sembunyiPopup);
+            popupContainer.addEventListener("click", (e) => { if (e.target === popupContainer) sembunyiPopup(); });
         });
     </script>
 </body>
 </html>
+
